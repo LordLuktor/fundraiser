@@ -1,0 +1,287 @@
+<?php
+/**
+ * Admin Settings View.
+ *
+ * @package FundraiserPro
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+// Save settings if form was submitted
+if ( isset( $_POST['fundraiser_pro_save_settings'] ) && check_admin_referer( 'fundraiser_pro_settings' ) ) {
+	// General Settings
+	update_option( 'fundraiser_pro_currency', sanitize_text_field( $_POST['currency'] ?? 'USD' ) );
+	update_option( 'fundraiser_pro_currency_position', sanitize_text_field( $_POST['currency_position'] ?? 'before' ) );
+	update_option( 'fundraiser_pro_thousand_separator', sanitize_text_field( $_POST['thousand_separator'] ?? ',' ) );
+	update_option( 'fundraiser_pro_decimal_separator', sanitize_text_field( $_POST['decimal_separator'] ?? '.' ) );
+
+	// Email Settings
+	update_option( 'fundraiser_pro_email_from_name', sanitize_text_field( $_POST['email_from_name'] ?? get_bloginfo( 'name' ) ) );
+	update_option( 'fundraiser_pro_email_from_address', sanitize_email( $_POST['email_from_address'] ?? get_bloginfo( 'admin_email' ) ) );
+
+	// AI Settings
+	update_option( 'fundraiser_pro_enable_ai_assistant', isset( $_POST['enable_ai_assistant'] ) ? 1 : 0 );
+
+	if ( ! empty( $_POST['openai_api_key'] ) ) {
+		// Encrypt API key (basic base64 - use proper encryption in production)
+		update_option( 'fundraiser_pro_openai_api_key', base64_encode( sanitize_text_field( $_POST['openai_api_key'] ) ) );
+	}
+
+	update_option( 'fundraiser_pro_openai_model', sanitize_text_field( $_POST['openai_model'] ?? 'gpt-4-turbo-preview' ) );
+	update_option( 'fundraiser_pro_openai_max_tokens', absint( $_POST['openai_max_tokens'] ?? 1000 ) );
+
+	// Receipt Settings
+	update_option( 'fundraiser_pro_receipt_prefix', sanitize_text_field( $_POST['receipt_prefix'] ?? 'FP-' ) );
+	update_option( 'fundraiser_pro_receipt_number_length', absint( $_POST['receipt_number_length'] ?? 6 ) );
+
+	echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Settings saved successfully!', 'fundraiser-pro' ) . '</p></div>';
+}
+
+// Get current settings
+$currency = get_option( 'fundraiser_pro_currency', 'USD' );
+$currency_position = get_option( 'fundraiser_pro_currency_position', 'before' );
+$thousand_separator = get_option( 'fundraiser_pro_thousand_separator', ',' );
+$decimal_separator = get_option( 'fundraiser_pro_decimal_separator', '.' );
+
+$email_from_name = get_option( 'fundraiser_pro_email_from_name', get_bloginfo( 'name' ) );
+$email_from_address = get_option( 'fundraiser_pro_email_from_address', get_bloginfo( 'admin_email' ) );
+
+$enable_ai = get_option( 'fundraiser_pro_enable_ai_assistant', false );
+$openai_model = get_option( 'fundraiser_pro_openai_model', 'gpt-4-turbo-preview' );
+$openai_max_tokens = get_option( 'fundraiser_pro_openai_max_tokens', 1000 );
+
+$receipt_prefix = get_option( 'fundraiser_pro_receipt_prefix', 'FP-' );
+$receipt_number_length = get_option( 'fundraiser_pro_receipt_number_length', 6 );
+
+?>
+
+<div class="fundraiser-pro-wrap">
+	<div class="fundraiser-pro-header">
+		<h1><?php esc_html_e( 'Fundraiser Pro Settings', 'fundraiser-pro' ); ?></h1>
+		<p><?php esc_html_e( 'Configure your fundraising platform', 'fundraiser-pro' ); ?></p>
+	</div>
+
+	<form method="post" action="">
+		<?php wp_nonce_field( 'fundraiser_pro_settings' ); ?>
+
+		<!-- Tab Navigation -->
+		<div class="fp-tabs">
+			<button type="button" class="fp-tab-btn active" data-tab="general">
+				<span class="dashicons dashicons-admin-settings"></span>
+				<?php esc_html_e( 'General', 'fundraiser-pro' ); ?>
+			</button>
+			<button type="button" class="fp-tab-btn" data-tab="email">
+				<span class="dashicons dashicons-email"></span>
+				<?php esc_html_e( 'Email', 'fundraiser-pro' ); ?>
+			</button>
+			<button type="button" class="fp-tab-btn" data-tab="ai">
+				<span class="dashicons dashicons-admin-generic"></span>
+				<?php esc_html_e( 'AI Assistant', 'fundraiser-pro' ); ?>
+			</button>
+			<button type="button" class="fp-tab-btn" data-tab="receipts">
+				<span class="dashicons dashicons-media-document"></span>
+				<?php esc_html_e( 'Receipts', 'fundraiser-pro' ); ?>
+			</button>
+		</div>
+
+		<!-- General Settings Tab -->
+		<div class="fp-tab-content active" data-tab="general">
+			<div class="fp-card">
+				<div class="fp-card-header">
+					<h2 class="fp-card-title"><?php esc_html_e( 'General Settings', 'fundraiser-pro' ); ?></h2>
+				</div>
+				<div class="fp-card-body">
+					<div class="fp-form-group">
+						<label for="currency">
+							<?php esc_html_e( 'Currency', 'fundraiser-pro' ); ?>
+						</label>
+						<select name="currency" id="currency" class="fp-input">
+							<option value="USD" <?php selected( $currency, 'USD' ); ?>>USD - US Dollar</option>
+							<option value="EUR" <?php selected( $currency, 'EUR' ); ?>>EUR - Euro</option>
+							<option value="GBP" <?php selected( $currency, 'GBP' ); ?>>GBP - British Pound</option>
+							<option value="CAD" <?php selected( $currency, 'CAD' ); ?>>CAD - Canadian Dollar</option>
+							<option value="AUD" <?php selected( $currency, 'AUD' ); ?>>AUD - Australian Dollar</option>
+						</select>
+						<small class="fp-help-text"><?php esc_html_e( 'Currency for displaying amounts', 'fundraiser-pro' ); ?></small>
+					</div>
+
+					<div class="fp-form-group">
+						<label for="currency_position">
+							<?php esc_html_e( 'Currency Position', 'fundraiser-pro' ); ?>
+						</label>
+						<select name="currency_position" id="currency_position" class="fp-input">
+							<option value="before" <?php selected( $currency_position, 'before' ); ?>><?php esc_html_e( 'Before amount ($99.99)', 'fundraiser-pro' ); ?></option>
+							<option value="after" <?php selected( $currency_position, 'after' ); ?>><?php esc_html_e( 'After amount (99.99$)', 'fundraiser-pro' ); ?></option>
+						</select>
+					</div>
+
+					<div class="fp-form-group">
+						<label for="thousand_separator">
+							<?php esc_html_e( 'Thousand Separator', 'fundraiser-pro' ); ?>
+						</label>
+						<input type="text" name="thousand_separator" id="thousand_separator" value="<?php echo esc_attr( $thousand_separator ); ?>" class="fp-input" maxlength="1">
+						<small class="fp-help-text"><?php esc_html_e( 'Character for thousands (e.g., 1,000)', 'fundraiser-pro' ); ?></small>
+					</div>
+
+					<div class="fp-form-group">
+						<label for="decimal_separator">
+							<?php esc_html_e( 'Decimal Separator', 'fundraiser-pro' ); ?>
+						</label>
+						<input type="text" name="decimal_separator" id="decimal_separator" value="<?php echo esc_attr( $decimal_separator ); ?>" class="fp-input" maxlength="1">
+						<small class="fp-help-text"><?php esc_html_e( 'Character for decimals (e.g., 99.99)', 'fundraiser-pro' ); ?></small>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Email Settings Tab -->
+		<div class="fp-tab-content" data-tab="email">
+			<div class="fp-card">
+				<div class="fp-card-header">
+					<h2 class="fp-card-title"><?php esc_html_e( 'Email Settings', 'fundraiser-pro' ); ?></h2>
+				</div>
+				<div class="fp-card-body">
+					<div class="fp-form-group">
+						<label for="email_from_name">
+							<?php esc_html_e( 'From Name', 'fundraiser-pro' ); ?>
+						</label>
+						<input type="text" name="email_from_name" id="email_from_name" value="<?php echo esc_attr( $email_from_name ); ?>" class="fp-input">
+						<small class="fp-help-text"><?php esc_html_e( 'Name shown in outgoing emails', 'fundraiser-pro' ); ?></small>
+					</div>
+
+					<div class="fp-form-group">
+						<label for="email_from_address">
+							<?php esc_html_e( 'From Email Address', 'fundraiser-pro' ); ?>
+						</label>
+						<input type="email" name="email_from_address" id="email_from_address" value="<?php echo esc_attr( $email_from_address ); ?>" class="fp-input">
+						<small class="fp-help-text"><?php esc_html_e( 'Email address for outgoing emails', 'fundraiser-pro' ); ?></small>
+					</div>
+
+					<div class="fp-alert fp-alert-info">
+						<span class="dashicons dashicons-info"></span>
+						<strong><?php esc_html_e( 'Tip:', 'fundraiser-pro' ); ?></strong>
+						<?php esc_html_e( 'For reliable email delivery, we recommend using an SMTP plugin like WP Mail SMTP or Post SMTP.', 'fundraiser-pro' ); ?>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- AI Assistant Tab -->
+		<div class="fp-tab-content" data-tab="ai">
+			<div class="fp-card">
+				<div class="fp-card-header">
+					<h2 class="fp-card-title"><?php esc_html_e( 'AI Assistant Settings', 'fundraiser-pro' ); ?></h2>
+				</div>
+				<div class="fp-card-body">
+					<div class="fp-form-group">
+						<label class="fp-checkbox-label">
+							<input type="checkbox" name="enable_ai_assistant" value="1" <?php checked( $enable_ai, 1 ); ?>>
+							<?php esc_html_e( 'Enable AI Assistant', 'fundraiser-pro' ); ?>
+						</label>
+						<small class="fp-help-text"><?php esc_html_e( 'Use OpenAI to help create campaigns, landing pages, generate images, and analyze reports', 'fundraiser-pro' ); ?></small>
+					</div>
+
+					<div class="fp-form-group">
+						<label for="openai_api_key">
+							<?php esc_html_e( 'OpenAI API Key', 'fundraiser-pro' ); ?>
+						</label>
+						<input type="password" name="openai_api_key" id="openai_api_key" class="fp-input" placeholder="sk-...">
+						<small class="fp-help-text">
+							<?php esc_html_e( 'Get your API key from', 'fundraiser-pro' ); ?>
+							<a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>
+						</small>
+					</div>
+
+					<div class="fp-form-group">
+						<label for="openai_model">
+							<?php esc_html_e( 'Model', 'fundraiser-pro' ); ?>
+						</label>
+						<select name="openai_model" id="openai_model" class="fp-input">
+							<option value="gpt-4-turbo-preview" <?php selected( $openai_model, 'gpt-4-turbo-preview' ); ?>>GPT-4 Turbo (Recommended)</option>
+							<option value="gpt-4" <?php selected( $openai_model, 'gpt-4' ); ?>>GPT-4</option>
+							<option value="gpt-3.5-turbo" <?php selected( $openai_model, 'gpt-3.5-turbo' ); ?>>GPT-3.5 Turbo (Faster/Cheaper)</option>
+						</select>
+						<small class="fp-help-text"><?php esc_html_e( 'GPT-4 Turbo provides best results for complex tasks', 'fundraiser-pro' ); ?></small>
+					</div>
+
+					<div class="fp-form-group">
+						<label for="openai_max_tokens">
+							<?php esc_html_e( 'Max Tokens', 'fundraiser-pro' ); ?>
+						</label>
+						<input type="number" name="openai_max_tokens" id="openai_max_tokens" value="<?php echo esc_attr( $openai_max_tokens ); ?>" class="fp-input" min="100" max="4000" step="100">
+						<small class="fp-help-text"><?php esc_html_e( 'Maximum tokens per request (higher = longer responses but more cost)', 'fundraiser-pro' ); ?></small>
+					</div>
+
+					<div class="fp-alert fp-alert-info">
+						<span class="dashicons dashicons-lightbulb"></span>
+						<strong><?php esc_html_e( 'AI Features Include:', 'fundraiser-pro' ); ?></strong>
+						<ul style="margin-top: 10px;">
+							<li><?php esc_html_e( 'Campaign content generation and suggestions', 'fundraiser-pro' ); ?></li>
+							<li><?php esc_html_e( 'Automated landing page creation with compelling copy', 'fundraiser-pro' ); ?></li>
+							<li><?php esc_html_e( 'Image generation from prompts for campaign visuals', 'fundraiser-pro' ); ?></li>
+							<li><?php esc_html_e( 'Analytics reporting with insights and recommendations', 'fundraiser-pro' ); ?></li>
+							<li><?php esc_html_e( 'Comprehensive fundraising assistance', 'fundraiser-pro' ); ?></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Receipt Settings Tab -->
+		<div class="fp-tab-content" data-tab="receipts">
+			<div class="fp-card">
+				<div class="fp-card-header">
+					<h2 class="fp-card-title"><?php esc_html_e( 'Receipt Settings', 'fundraiser-pro' ); ?></h2>
+				</div>
+				<div class="fp-card-body">
+					<div class="fp-form-group">
+						<label for="receipt_prefix">
+							<?php esc_html_e( 'Receipt Number Prefix', 'fundraiser-pro' ); ?>
+						</label>
+						<input type="text" name="receipt_prefix" id="receipt_prefix" value="<?php echo esc_attr( $receipt_prefix ); ?>" class="fp-input" maxlength="10">
+						<small class="fp-help-text"><?php esc_html_e( 'Prefix for receipt numbers (e.g., FP-000001)', 'fundraiser-pro' ); ?></small>
+					</div>
+
+					<div class="fp-form-group">
+						<label for="receipt_number_length">
+							<?php esc_html_e( 'Receipt Number Length', 'fundraiser-pro' ); ?>
+						</label>
+						<input type="number" name="receipt_number_length" id="receipt_number_length" value="<?php echo esc_attr( $receipt_number_length ); ?>" class="fp-input" min="4" max="10">
+						<small class="fp-help-text"><?php esc_html_e( 'Number of digits in receipt numbers', 'fundraiser-pro' ); ?></small>
+					</div>
+
+					<div class="fp-alert fp-alert-info">
+						<span class="dashicons dashicons-media-document"></span>
+						<?php esc_html_e( 'Receipts are automatically generated for approved cash transactions and online donations.', 'fundraiser-pro' ); ?>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Submit Button -->
+		<div class="fp-form-actions">
+			<button type="submit" name="fundraiser_pro_save_settings" class="fp-btn fp-btn-primary fp-btn-lg">
+				<span class="dashicons dashicons-saved"></span>
+				<?php esc_html_e( 'Save Settings', 'fundraiser-pro' ); ?>
+			</button>
+		</div>
+	</form>
+</div>
+
+<script>
+jQuery(document).ready(function($) {
+	// Tab switching
+	$('.fp-tab-btn').on('click', function() {
+		var tab = $(this).data('tab');
+
+		$('.fp-tab-btn').removeClass('active');
+		$(this).addClass('active');
+
+		$('.fp-tab-content').removeClass('active');
+		$('.fp-tab-content[data-tab="' + tab + '"]').addClass('active');
+	});
+});
+</script>
