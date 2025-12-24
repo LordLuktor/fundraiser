@@ -3,7 +3,7 @@
  * Plugin Name: Fundraiser Pro
  * Plugin URI: https://fundraiser.steinmetz.ltd
  * Description: Complete WordPress fundraising platform with WooCommerce integration, campaigns, raffles, cash payment management, AI assistant, and comprehensive analytics.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Requires at least: 6.4
  * Requires PHP: 8.1
  * Author: Steinmetz Ltd
@@ -26,7 +26,7 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Plugin version.
  */
-define( 'FUNDRAISER_PRO_VERSION', '1.0.0' );
+define( 'FUNDRAISER_PRO_VERSION', '1.0.1' );
 
 /**
  * Plugin directory path.
